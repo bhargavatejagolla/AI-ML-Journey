@@ -1,0 +1,9 @@
+*.docx
+*.db
+*.db-journal
+*.log
+logs/
+.vscode/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/

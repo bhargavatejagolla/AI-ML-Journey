@@ -1,0 +1,1219 @@
+bash
+
+cat > /mnt/user-data/outputs/altar_of_serpents.html << 'ENDOFFILE'
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>⛧ ALTAR OF SERPENTS ⛧</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=MedievalSharp&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap');
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --void:#000005;
+  --deep-purple:#0d0020;
+  --bruised:#1a0035;
+  --emerald:#003a1a;
+  --bone:#c8bfa0;
+  --blood:#8b0000;
+  --gold:#c9a020;
+  --venom:#00ff44;
+  --crimson:#dc143c;
+  --obsidian:#0a0a0f;
+}
+html,body{width:100%;height:100%;overflow:hidden;background:var(--void);cursor:crosshair;}
+canvas{position:fixed;top:0;left:0;width:100%;height:100%;display:block;}
+
+/* OVERLAY LAYERS */
+#vignette{position:fixed;inset:0;background:radial-gradient(ellipse at 50% 40%,transparent 20%,rgba(0,0,10,0.7)60%,rgba(0,0,0,0.97)100%);pointer-events:none;z-index:2;}
+#scanlines{position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.08)2px,rgba(0,0,0,0.08)4px);pointer-events:none;z-index:3;animation:scanMove 8s linear infinite;}
+@keyframes scanMove{0%{background-position:0 0}100%{background-position:0 100px}}
+#grain{position:fixed;inset:0;opacity:.06;pointer-events:none;z-index:4;filter:url(#noise);}
+#chromatic{position:fixed;inset:0;pointer-events:none;z-index:5;opacity:0;mix-blend-mode:screen;background:linear-gradient(90deg,rgba(255,0,0,.03)0%,transparent 30%,transparent 70%,rgba(0,0,255,.03)100%);}
+
+/* BLOOD EFFECTS */
+.blood-splat{position:fixed;pointer-events:none;z-index:10;font-size:60px;animation:splatFade 2s ease-out forwards;filter:drop-shadow(0 0 20px #8b0000);}
+@keyframes splatFade{0%{opacity:1;transform:scale(0.5)}30%{opacity:1;transform:scale(1.5)}100%{opacity:0;transform:scale(2)translateY(30px)}}
+.blood-drip{position:fixed;top:0;pointer-events:none;z-index:11;width:3px;border-radius:0 0 50% 50%;background:linear-gradient(#8b0000,#4a0000 80%,transparent);animation:dripDown 4s ease-in forwards;}
+@keyframes dripDown{0%{height:0;opacity:.9}100%{height:70vh;opacity:0.5}}
+.eyeball{position:fixed;pointer-events:none;z-index:12;font-size:30px;animation:eyeFloat 6s ease-in-out infinite;filter:drop-shadow(0 0 10px red);}
+@keyframes eyeFloat{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-20px) rotate(180deg)}}
+.ghost-text{position:fixed;pointer-events:none;z-index:12;font-family:'Crimson Text',serif;font-size:18px;color:rgba(200,191,160,.6);animation:ghostDrift 5s ease-out forwards;font-style:italic;}
+@keyframes ghostDrift{0%{opacity:0;transform:translateY(0)}20%{opacity:.8}100%{opacity:0;transform:translateY(-80px)}}
+
+/* FLASH EFFECTS */
+#flash{position:fixed;inset:0;pointer-events:none;z-index:20;opacity:0;transition:opacity .05s;}
+#flash.red{background:rgba(139,0,0,.5);}
+#flash.white{background:rgba(255,255,255,.3);}
+#flash.green{background:rgba(0,255,50,.15);}
+
+/* MAIN UI PANEL */
+#ui{
+  position:fixed;bottom:0;left:50%;transform:translateX(-50%);
+  width:min(980px,100vw);z-index:30;
+  background:linear-gradient(180deg,rgba(5,0,20,.97),rgba(10,0,30,.99));
+  border:1px solid rgba(180,0,255,.2);border-bottom:none;
+  border-radius:16px 16px 0 0;
+  box-shadow:0 -8px 60px rgba(120,0,255,.3),0 -2px 20px rgba(180,0,0,.2),inset 0 1px 0 rgba(200,100,255,.1);
+  font-family:'Crimson Text',serif;
+}
+#ui::before{content:'';position:absolute;top:0;left:10%;right:10%;height:1px;background:linear-gradient(90deg,transparent,#9d4edd,#ff006e,#00ff88,#9d4edd,transparent);}
+
+#ui-top{display:flex;align-items:center;justify-content:space-between;padding:10px 18px 6px;}
+#game-logo{font-family:'Cinzel Decorative',cursive;font-size:14px;font-weight:900;letter-spacing:3px;background:linear-gradient(135deg,#9d4edd,#ff006e,#ffd700,#00ff88);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+#souls-counter{font-family:'Cinzel Decorative',cursive;font-size:15px;color:var(--gold);text-shadow:0 0 12px rgba(201,160,32,.8);}
+#pos-info{font-size:11px;color:#6b5a7a;font-style:italic;}
+
+/* BETTING GRID */
+#bets{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;padding:0 12px 8px;}
+.bet-card{background:rgba(15,0,35,.8);border:1px solid rgba(120,0,200,.25);border-radius:8px;padding:8px 10px;cursor:pointer;transition:all .25s;position:relative;overflow:hidden;}
+.bet-card::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% 0%,rgba(157,78,221,.08),transparent 70%);opacity:0;transition:opacity .3s;}
+.bet-card:hover::before,.bet-card.active::before{opacity:1;}
+.bet-card.active{border-color:rgba(255,0,110,.6);background:rgba(30,0,50,.9);box-shadow:0 0 20px rgba(255,0,110,.2);}
+.bet-card:hover{border-color:rgba(157,78,221,.5);}
+.bc-title{font-family:'Cinzel Decorative',cursive;font-size:9px;font-weight:700;letter-spacing:1px;margin-bottom:3px;display:block;}
+.bc-desc{font-size:9px;font-style:italic;color:#6b5a7a;display:block;margin-bottom:5px;line-height:1.3;}
+.bet-input{width:100%;background:rgba(0,0,0,.6);border:1px solid rgba(100,0,180,.3);border-radius:4px;color:var(--gold);padding:3px 7px;font-size:11px;font-family:'Crimson Text',serif;}
+.bet-input:focus{outline:none;border-color:#9d4edd;}
+
+/* ACTION BAR */
+#actions{display:flex;gap:8px;padding:0 12px 8px;}
+.hbtn{font-family:'Cinzel Decorative',cursive;font-size:10px;font-weight:700;padding:9px 16px;border:none;border-radius:7px;cursor:pointer;letter-spacing:1px;transition:all .3s;position:relative;overflow:hidden;}
+.hbtn::after{content:'';position:absolute;inset:0;background:linear-gradient(transparent 0%,rgba(255,255,255,.04)100%);pointer-events:none;}
+#btn-roll{flex:1;background:linear-gradient(135deg,#3a0060,#6b0000);color:#c9a96e;border:1px solid rgba(180,80,80,.3);box-shadow:0 0 20px rgba(100,0,0,.4);}
+#btn-roll:hover:not(:disabled){box-shadow:0 0 35px rgba(255,0,0,.5);transform:translateY(-1px);}
+#btn-roll:disabled{opacity:.35;cursor:not-allowed;transform:none;}
+#btn-side{background:linear-gradient(135deg,#003a20,#006000);color:#7fff00;border:1px solid rgba(0,200,0,.3);box-shadow:0 0 15px rgba(0,150,0,.2);}
+#btn-side:hover{box-shadow:0 0 25px rgba(0,255,0,.3);}
+#btn-ai{background:linear-gradient(135deg,#3a2000,#6b3000);color:#ff8c00;border:1px solid rgba(255,140,0,.3);}
+#btn-ai:hover{box-shadow:0 0 25px rgba(255,100,0,.4);}
+
+/* STATUS + LOG */
+#status{font-size:12px;color:var(--bone);font-style:italic;text-align:center;padding:4px 12px;min-height:24px;text-shadow:0 0 8px rgba(201,180,100,.3);border-top:1px solid rgba(120,0,200,.1);}
+#log{max-height:52px;overflow-y:auto;padding:3px 12px 8px;font-size:10px;color:#5a4a6a;scrollbar-width:thin;scrollbar-color:#3a1060 transparent;}
+.le{padding:1px 0;border-bottom:1px solid rgba(80,0,120,.05);}
+.le.snake{color:#8b2020;}
+.le.ladder{color:#2a8b2a;}
+.le.bet{color:var(--gold);}
+.le.ai{color:#ff8c00;}
+
+/* AI PANEL */
+#ai-panel{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:400px;max-width:92vw;background:rgba(5,0,20,.98);border:2px solid rgba(255,140,0,.5);border-radius:14px;padding:20px;z-index:50;display:none;box-shadow:0 0 60px rgba(255,100,0,.3);}
+#ai-panel h3{font-family:'Cinzel Decorative',cursive;color:#ff8c00;margin-bottom:12px;font-size:14px;}
+#ai-response{color:var(--bone);font-size:13px;font-style:italic;line-height:1.6;min-height:60px;max-height:200px;overflow-y:auto;margin-bottom:15px;padding:10px;background:rgba(0,0,0,.4);border-radius:6px;border:1px solid rgba(255,140,0,.2);}
+#ai-thinking{color:#ff8c00;font-size:11px;animation:pulse 1s infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.ai-close{font-family:'Cinzel Decorative',cursive;padding:8px 20px;background:linear-gradient(135deg,#3a2000,#6b3000);color:#ff8c00;border:1px solid rgba(255,140,0,.3);border-radius:6px;cursor:pointer;font-size:10px;}
+
+/* SIDE WAGER MODAL */
+#wager-modal{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:340px;max-width:92vw;background:rgba(5,0,20,.98);border:2px solid rgba(157,78,221,.5);border-radius:14px;padding:20px;z-index:50;display:none;box-shadow:0 0 50px rgba(157,78,221,.4);}
+#wager-modal h3{font-family:'Cinzel Decorative',cursive;color:#9d4edd;margin-bottom:10px;font-size:13px;text-align:center;}
+.wager-row{display:flex;gap:8px;justify-content:center;margin:12px 0;}
+.wb{font-family:'Cinzel Decorative',cursive;padding:9px 18px;border-radius:6px;cursor:pointer;font-size:10px;border:1px solid;transition:all .2s;}
+.wb.snake-bet{background:rgba(60,0,0,.8);color:#ff6060;border-color:#8b0000;}
+.wb.snake-bet:hover{background:rgba(100,0,0,.9);box-shadow:0 0 15px rgba(255,0,0,.3);}
+.wb.ladder-bet{background:rgba(0,60,0,.8);color:#60ff60;border-color:#008b00;}
+.wb.ladder-bet:hover{background:rgba(0,100,0,.9);box-shadow:0 0 15px rgba(0,255,0,.3);}
+.wb.cancel-bet{background:rgba(30,30,30,.8);color:#888;border-color:#333;}
+.wager-input-row{display:flex;align-items:center;gap:8px;justify-content:center;margin:8px 0;}
+.wager-input-row label{color:#9d4edd;font-size:12px;}
+.wager-input-row input{background:rgba(0,0,0,.5);border:1px solid #9d4edd;color:var(--gold);padding:5px 10px;border-radius:4px;font-size:13px;width:90px;font-family:'Crimson Text',serif;}
+
+/* GAME OVER / WIN */
+#endscreen{position:fixed;inset:0;z-index:60;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(0,0,0,.93);opacity:0;pointer-events:none;transition:opacity 2s;}
+#endscreen.show{opacity:1;pointer-events:all;}
+#end-title{font-family:'Cinzel Decorative',cursive;font-size:clamp(32px,6vw,72px);text-align:center;line-height:1.2;margin-bottom:20px;}
+#end-sub{font-family:'Crimson Text',serif;font-size:18px;font-style:italic;color:#7b6b8a;margin-bottom:30px;text-align:center;}
+#restart{font-family:'Cinzel Decorative',cursive;padding:14px 40px;background:linear-gradient(135deg,#3a0060,#8b0000);color:var(--bone);border:2px solid #9d4edd;border-radius:8px;font-size:13px;cursor:pointer;letter-spacing:2px;transition:all .3s;}
+#restart:hover{box-shadow:0 0 30px rgba(157,78,221,.6);transform:scale(1.05);}
+
+/* SNAKE TOOLTIP */
+#snake-tooltip{position:fixed;background:rgba(0,0,0,.95);border:1px solid;border-radius:8px;padding:10px 14px;font-size:11px;z-index:100;display:none;pointer-events:none;max-width:220px;font-style:italic;}
+
+/* AI TAUNT */
+#ai-taunt{position:fixed;top:20px;right:20px;max-width:280px;background:rgba(5,0,20,.95);border:1px solid rgba(255,140,0,.3);border-radius:10px;padding:12px 16px;font-size:12px;color:var(--bone);font-style:italic;z-index:40;opacity:0;transform:translateX(20px);transition:all .4s;line-height:1.5;}
+#ai-taunt::before{content:'🔮 THE ALTAR SPEAKS';display:block;font-family:'Cinzel Decorative',cursive;font-size:8px;color:#ff8c00;margin-bottom:6px;letter-spacing:2px;}
+#ai-taunt.show{opacity:1;transform:translateX(0);}
+</style>
+</head>
+<body>
+
+<!-- SVG filter for grain -->
+<svg style="position:fixed;width:0;height:0"><defs><filter id="noise"><feTurbulence type="fractalNoise" baseFrequency="0.75" numOctaves="4" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/></filter></defs></svg>
+<div id="grain"></div>
+
+<canvas id="c"></canvas>
+<div id="vignette"></div>
+<div id="scanlines"></div>
+<div id="chromatic"></div>
+<div id="flash"></div>
+
+<div id="ai-taunt"></div>
+<div id="snake-tooltip"></div>
+
+<!-- MAIN UI -->
+<div id="ui">
+  <div id="ui-top">
+    <span id="game-logo">⛧ ALTAR OF SERPENTS ⛧</span>
+    <span id="souls-counter">💀 666 SOULS</span>
+    <span id="pos-info">Square 1 / 100</span>
+  </div>
+  <div id="bets">
+    <div class="bet-card active" id="bc-std" onclick="selectBet('std',this)">
+      <span class="bc-title" style="color:#ff006e;">⚔ STANDARD BET</span>
+      <span class="bc-desc">Wager souls on this roll</span>
+      <input class="bet-input" id="std-amt" type="number" value="50" min="10">
+    </div>
+    <div class="bet-card" id="bc-ins" onclick="selectBet('ins',this)">
+      <span class="bc-title" style="color:#9d4edd;">🛡 SNAKE INSURANCE</span>
+      <span class="bc-desc">Halve any snake penalty</span>
+      <input class="bet-input" id="ins-amt" type="number" value="30" min="0">
+    </div>
+    <div class="bet-card" id="bc-boost" onclick="selectBet('boost',this)">
+      <span class="bc-title" style="color:#00ff88;">⚗ LADDER BOOSTER</span>
+      <span class="bc-desc">Double ladder reward</span>
+      <input class="bet-input" id="boost-amt" type="number" value="40" min="0">
+    </div>
+    <div class="bet-card" id="bc-curse" onclick="selectBet('curse',this)">
+      <span class="bc-title" style="color:#ff8c00;">☠ CURSED ROLL</span>
+      <span class="bc-desc">+2 to roll, costs dearly</span>
+      <input class="bet-input" id="curse-amt" type="number" value="60" min="10">
+    </div>
+  </div>
+  <div id="actions">
+    <button class="hbtn" id="btn-side" onclick="openWager()">⛧ SIDE WAGER</button>
+    <button class="hbtn" id="btn-ai" onclick="askAI()">🔮 CONSULT THE ORACLE</button>
+    <button class="hbtn" id="btn-roll" onclick="doRoll()">🎲 ROLL THE BONES</button>
+  </div>
+  <div id="status">The altar stirs... 666 souls pulse in your chest. Place your bets.</div>
+  <div id="log"></div>
+</div>
+
+<!-- AI Oracle Panel -->
+<div id="ai-panel">
+  <h3>🔮 THE ORACLE OF THE VOID</h3>
+  <div id="ai-response"><span id="ai-thinking">The oracle peers into the abyss...</span></div>
+  <button class="ai-close" onclick="document.getElementById('ai-panel').style.display='none'">DISMISS THE VISION</button>
+</div>
+
+<!-- Side Wager Modal -->
+<div id="wager-modal">
+  <h3>⛧ SIDE WAGER — PREDICT YOUR FATE ⛧</h3>
+  <p style="color:#7b6b8a;font-size:11px;text-align:center;font-style:italic;">Wager souls on what the next square holds. Win 3× your bet.</p>
+  <div class="wager-input-row">
+    <label>Wager Amount:</label>
+    <input type="number" id="wager-amt" value="50" min="10">
+    <span style="color:#7b6b8a;font-size:11px;">souls</span>
+  </div>
+  <div class="wager-row">
+    <button class="wb snake-bet" onclick="placeWager('snake')">🐍 SERPENT</button>
+    <button class="wb ladder-bet" onclick="placeWager('ladder')">⚗ ASCEND</button>
+    <button class="wb cancel-bet" onclick="document.getElementById('wager-modal').style.display='none'">FLEE</button>
+  </div>
+</div>
+
+<!-- End Screen -->
+<div id="endscreen">
+  <div id="end-title"></div>
+  <div id="end-sub"></div>
+  <button id="restart" onclick="location.reload()">⛧ DESCEND AGAIN ⛧</button>
+</div>
+
+<script>
+// ═══════════════════════════════════════════
+//  AUDIO ENGINE
+// ═══════════════════════════════════════════
+const AC = new (window.AudioContext||window.webkitAudioContext)();
+const masterVol = AC.createGain(); masterVol.gain.value=0.8; masterVol.connect(AC.destination);
+function resume(){if(AC.state==='suspended')AC.resume();}
+
+const WHISPERS=["blood is the price","you cannot escape","the altar hungers","we see you","join us forever","the serpents wait"];
+
+function noise(dur=0.5,freq=2000,type='bandpass',vol=0.3,Q=1){
+  const buf=AC.createBuffer(1,AC.sampleRate*dur,AC.sampleRate);
+  const d=buf.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;
+  const src=AC.createBufferSource();src.buffer=buf;
+  const f=AC.createBiquadFilter();f.type=type;f.frequency.value=freq;f.Q.value=Q;
+  const g=AC.createGain();g.gain.setValueAtTime(0,AC.currentTime);
+  g.gain.linearRampToValueAtTime(vol,AC.currentTime+0.05);
+  g.gain.linearRampToValueAtTime(0,AC.currentTime+dur);
+  src.connect(f);f.connect(g);g.connect(masterVol);src.start();
+  return {src,gain:g};
+}
+function osc(freq,type='sine',dur=1,vol=0.3,freqEnd=null){
+  const o=AC.createOscillator();const g=AC.createGain();
+  o.type=type;o.frequency.value=freq;
+  if(freqEnd)o.frequency.exponentialRampToValueAtTime(freqEnd,AC.currentTime+dur);
+  g.gain.setValueAtTime(vol,AC.currentTime);g.gain.linearRampToValueAtTime(0,AC.currentTime+dur);
+  o.connect(g);g.connect(masterVol);o.start();o.stop(AC.currentTime+dur);
+}
+function playAmbient(){
+  const o1=AC.createOscillator(),o2=AC.createOscillator(),lfo=AC.createOscillator();
+  const lg=AC.createGain(),f=AC.createBiquadFilter(),g=AC.createGain();
+  o1.type='sawtooth';o1.frequency.value=38;o2.type='sine';o2.frequency.value=42;
+  f.type='lowpass';f.frequency.value=250;lfo.frequency.value=0.07;lg.gain.value=10;
+  lfo.connect(lg);lg.connect(o1.frequency);
+  g.gain.value=0.07;o1.connect(f);o2.connect(f);f.connect(g);g.connect(masterVol);
+  o1.start();o2.start();lfo.start();
+  setInterval(()=>{
+    const t=AC.currentTime;
+    g.gain.setValueAtTime(g.gain.value,t);
+    g.gain.linearRampToValueAtTime(0.04+Math.random()*0.08,t+4);
+    g.gain.linearRampToValueAtTime(0.02,t+10);
+  },9000);
+}
+function playDice(){for(let i=0;i<10;i++){noise(0.08,1500+Math.random()*2000,'highpass',0.4+Math.random()*0.3,0.5);setTimeout(()=>{},i*70);}}
+function playSnakeHiss(id){
+  const c=SNAKE_CONFIGS[id]||SNAKE_CONFIGS[17];
+  noise(2.5,c.hissFreq||3000,'bandpass',0.6,0.4);
+  setTimeout(()=>noise(1,400,'lowpass',0.3),500);
+}
+function playDeath(){
+  const o=AC.createOscillator(),o2=AC.createOscillator();
+  const dist=AC.createWaveShaper(),g=AC.createGain();
+  const curve=new Float32Array(512);
+  for(let i=0;i<512;i++){const x=i*2/512-1;curve[i]=Math.sign(x)*Math.pow(Math.abs(x),.2);}
+  dist.curve=curve;
+  o.type='sawtooth';o2.type='sawtooth';
+  o.frequency.setValueAtTime(700,AC.currentTime);
+  o.frequency.exponentialRampToValueAtTime(60,AC.currentTime+2.5);
+  o2.frequency.setValueAtTime(710,AC.currentTime);
+  o2.frequency.exponentialRampToValueAtTime(58,AC.currentTime+2.5);
+  g.gain.setValueAtTime(0.9,AC.currentTime);g.gain.linearRampToValueAtTime(0,AC.currentTime+3);
+  o.connect(dist);o2.connect(dist);dist.connect(g);g.connect(masterVol);
+  o.start();o2.start();o.stop(AC.currentTime+3);o2.stop(AC.currentTime+3);
+}
+function playLadder(){
+  [523,659,784,1047,1319,1568].forEach((f,i)=>setTimeout(()=>osc(f,'sine',1.2,.25),i*120));
+}
+function playWhisper(){noise(2,1200,'bandpass',.18,3);}
+function playWin(){[200,400,600,900,1200].forEach((f,i)=>setTimeout(()=>osc(f,'sine',2,.3),i*200));}
+function playGroan(){osc(80,'sawtooth',3,.15,40);}
+function playChime(){osc(880,'sine',.5,.2);osc(1109,'sine',.5,.15,.5);}
+
+// ═══════════════════════════════════════════
+//  CANVAS 2D RENDERER — FULLY VISIBLE
+// ═══════════════════════════════════════════
+const canvas=document.getElementById('c');
+const ctx=canvas.getContext('2d');
+let W,H,cellW,cellH,boardX,boardY,boardW,boardH;
+
+function resize(){
+  W=canvas.width=window.innerWidth;
+  H=canvas.height=window.innerHeight;
+  const uiH=document.getElementById('ui').offsetHeight||220;
+  boardH=H-uiH-30;boardW=Math.min(boardH,W-40);boardH=boardW;
+  boardX=(W-boardW)/2;boardY=15;
+  cellW=boardW/10;cellH=boardH/10;
+}
+resize();window.addEventListener('resize',resize);
+
+// ═══════════════════════════════════════════
+//  SNAKES CONFIG — 12 UNIQUE HORROR SNAKES
+// ═══════════════════════════════════════════
+const SNAKE_CONFIGS={
+  99:{name:"VOID SERPENT",   color1:"#1a0040",color2:"#7700ff",accent:"#dd00ff",eyeColor:"#ff00ff",penalty:120,desc:"Ancient cosmic horror. Its gaze erases memory.",hissFreq:200,bodyPattern:'cosmic'},
+  87:{name:"ACID WYRM",      color1:"#1a3a00",color2:"#44ff00",accent:"#aaff00",eyeColor:"#ffff00",penalty:100,desc:"Flesh dissolves in seconds. The screaming never stops.",hissFreq:4000,bodyPattern:'acid'},
+  95:{name:"BLOOD PYTHON",   color1:"#3a0000",color2:"#cc0000",accent:"#ff4444",eyeColor:"#ff8888",penalty:90,desc:"Drinks your life-force with every coil.",hissFreq:3000,bodyPattern:'blood'},
+  93:{name:"BONE CRAWLER",   color1:"#2a2a10",color2:"#c8bfa0",accent:"#ffffff",eyeColor:"#ffddaa",penalty:85,desc:"Made entirely of your ancestors' remains.",hissFreq:1500,bodyPattern:'bone'},
+  64:{name:"SHADOW VIPER",   color1:"#000010",color2:"#000050",accent:"#4444ff",eyeColor:"#0088ff",penalty:80,desc:"Exists between dimensions. It is always watching.",hissFreq:500,bodyPattern:'shadow'},
+  62:{name:"PLAGUE MAMBA",   color1:"#1a1a00",color2:"#888800",accent:"#dddd00",eyeColor:"#aaff00",penalty:75,desc:"Its bite rots the soul from within.",hissFreq:3500,bodyPattern:'plague'},
+  54:{name:"IRON CONSTRICTOR",color1:"#1a1010",color2:"#555555",accent:"#aaaaaa",eyeColor:"#ffffff",penalty:70,desc:"Cold metal scales. It will not let go.",hissFreq:800,bodyPattern:'iron'},
+  17:{name:"CRIMSON HYDRA",  color1:"#2a0010",color2:"#aa0030",accent:"#ff2060",eyeColor:"#ffaacc",penalty:60,desc:"Each severed head births three more horrors.",hissFreq:2500,bodyPattern:'hydra'},
+};
+const SNAKES={99:20,87:24,95:75,93:73,64:60,62:19,54:34,17:7};
+const LADDERS={4:14,9:31,20:38,28:84,40:59,51:67,63:81,71:91};
+
+// ═══════════════════════════════════════════
+//  BOARD GEOMETRY HELPERS
+// ═══════════════════════════════════════════
+function sqToXY(sq){
+  const i=sq-1,row=Math.floor(i/10),col=i%10;
+  const c=row%2===0?col:9-col;
+  return{x:boardX+c*cellW+cellW/2,y:boardY+boardH-(row+1)*cellH+cellH/2,row,col:c};
+}
+function sqToCell(sq){
+  const i=sq-1,row=Math.floor(i/10),col=i%10;
+  const c=row%2===0?col:9-col;
+  return{x:boardX+c*cellW,y:boardY+boardH-(row+1)*cellH,w:cellW,h:cellH,row,col:c};
+}
+
+// ═══════════════════════════════════════════
+//  ANIMATION STATE
+// ═══════════════════════════════════════════
+let t=0,shakeX=0,shakeY=0,shakeDecay=0;
+let bgShift=0,fogTime=0,glowPulse=0;
+const particles=[];const floaters=[];const bloodDrops=[];
+const snakeAnimT={};Object.keys(SNAKES).forEach(k=>snakeAnimT[k]=Math.random()*100);
+
+// Particles
+for(let i=0;i<120;i++){
+  particles.push({x:Math.random(),y:Math.random(),vx:(Math.random()-.5)*.0003,vy:-Math.random()*.0004-.0001,
+    r:Math.random()*2.5+.5,life:Math.random(),
+    hue:Math.random()<.4?280+Math.random()*40:Math.random()<.5?120+Math.random()*30:0,
+    sat:60+Math.random()*40,lit:30+Math.random()*40,speed:Math.random()*.5+.5});
+}
+
+// ═══════════════════════════════════════════
+//  GAME STATE
+// ═══════════════════════════════════════════
+let playerPos=1,souls=666,rolling=false,gameOver=false,moving=false;
+let activeBet='std',sideWager=null;
+let playerAnim={x:0,y:0,tx:0,ty:0,bounce:0,scale:1,glow:0,trail:[]};
+let snakeEatAnim=null; // {sq,t,cfg}
+let ladderAnim=null;   // {from,to,t}
+let diceAnim={rolling:false,t:0,value:1,x:0,y:0,velX:0,velY:0,rot:0,rotV:0};
+let aiEventQueue=[];
+
+// ═══════════════════════════════════════════
+//  PROCEDURAL TEXTURES (pre-generated)
+// ═══════════════════════════════════════════
+function makeCellCanvas(sq,highlight){
+  const oc=document.createElement('canvas');oc.width=64;oc.height=64;
+  const ox=oc.getContext('2d');
+  // Base
+  const isSnake=SNAKES[sq]!==undefined,isLadder=LADDERS[sq]!==undefined;
+  const isSt=sq===1,isEnd=sq===100;
+  let base='#0d0025';
+  if(isSnake)base='#1a0005';else if(isLadder)base='#001a05';
+  else if(isSt)base='#001a10';else if(isEnd)base='#1a1400';
+  ox.fillStyle=base;ox.fillRect(0,0,64,64);
+  // Stone texture
+  for(let i=0;i<8;i++){
+    ox.beginPath();ox.moveTo(Math.random()*64,Math.random()*64);
+    for(let j=0;j<4;j++)ox.lineTo(Math.random()*64,Math.random()*64);
+    ox.strokeStyle=`rgba(255,255,255,0.03)`;ox.lineWidth=.5;ox.stroke();
+  }
+  // Glow spot
+  const grd=ox.createRadialGradient(32,32,0,32,32,28);
+  if(isSnake){grd.addColorStop(0,'rgba(180,0,0,.12)');grd.addColorStop(1,'transparent');}
+  else if(isLadder){grd.addColorStop(0,'rgba(0,180,0,.12)');grd.addColorStop(1,'transparent');}
+  else{grd.addColorStop(0,'rgba(80,0,160,.08)');grd.addColorStop(1,'transparent');}
+  ox.fillStyle=grd;ox.fillRect(0,0,64,64);
+  return oc;
+}
+
+// ═══════════════════════════════════════════
+//  DRAW FUNCTIONS
+// ═══════════════════════════════════════════
+function drawBG(){
+  // Abyss background with shifting colors
+  const bg=ctx.createRadialGradient(W*.5,H*.4,0,W*.5,H*.5,Math.max(W,H)*.8);
+  bg.addColorStop(0,`hsl(${270+Math.sin(t*.001)*15},80%,4%)`);
+  bg.addColorStop(.3,`hsl(${250+Math.cos(t*.0008)*10},70%,2%)`);
+  bg.addColorStop(.7,`hsl(130,60%,1%)`);
+  bg.addColorStop(1,'#000000');
+  ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);
+
+  // Subtle runes in background
+  ctx.save();ctx.globalAlpha=.04+Math.sin(t*.002)*.02;
+  ctx.fillStyle='#9900ff';ctx.font=`${Math.min(W,H)*.15}px serif`;
+  ctx.textAlign='center';ctx.textBaseline='middle';
+  ['⛧','✦','☽','⚸','⛥'].forEach((r,i)=>{
+    const rx=W*.1+i*(W*.2),ry=H*.5+Math.sin(t*.001+i)*(H*.1);
+    ctx.fillText(r,rx,ry);
+  });
+  ctx.restore();
+}
+
+function drawParticles(){
+  particles.forEach(p=>{
+    p.x+=p.vx*p.speed;p.y+=p.vy*p.speed;p.life-=.0008*p.speed;
+    if(p.life<=0||p.x<0||p.x>1||p.y<0){
+      p.x=Math.random();p.y=1;p.life=.6+Math.random()*.4;
+      p.hue=Math.random()<.4?280+Math.random()*40:Math.random()<.5?120+Math.random()*30:0;
+    }
+    const a=p.life*.5;
+    ctx.beginPath();ctx.arc(p.x*W,p.y*H,p.r,0,Math.PI*2);
+    ctx.fillStyle=`hsla(${p.hue},${p.sat}%,${p.lit}%,${a})`;ctx.fill();
+  });
+}
+
+function drawBoard(){
+  // Board shadow/glow
+  ctx.save();
+  ctx.shadowBlur=40+Math.sin(t*.003)*15;
+  ctx.shadowColor='rgba(120,0,255,.5)';
+  ctx.fillStyle='rgba(5,0,20,.9)';
+  ctx.beginPath();ctx.roundRect(boardX-6,boardY-6,boardW+12,boardH+12,8);ctx.fill();
+  ctx.restore();
+
+  // Board border
+  const borderGrd=ctx.createLinearGradient(boardX,boardY,boardX+boardW,boardY+boardH);
+  borderGrd.addColorStop(0,'#9d4edd');borderGrd.addColorStop(.25,'#ff006e');
+  borderGrd.addColorStop(.5,'#00ff88');borderGrd.addColorStop(.75,'#ffd700');
+  borderGrd.addColorStop(1,'#9d4edd');
+  ctx.strokeStyle=borderGrd;ctx.lineWidth=2+Math.sin(t*.005)*.5;
+  ctx.beginPath();ctx.roundRect(boardX-3,boardY-3,boardW+6,boardH+6,6);ctx.stroke();
+
+  // Draw cells
+  for(let sq=1;sq<=100;sq++){
+    const cell=sqToCell(sq);
+    const isSnake=SNAKES[sq]!==undefined,isLadder=LADDERS[sq]!==undefined;
+    const isSt=sq===1,isEnd=sq===100,isCur=sq===playerPos;
+
+    // Cell base
+    let baseColor='rgba(10,0,28,.9)';
+    if(isSnake)baseColor='rgba(25,0,8,.95)';
+    else if(isLadder)baseColor='rgba(0,20,8,.95)';
+    else if(isSt)baseColor='rgba(0,25,15,.95)';
+    else if(isEnd)baseColor='rgba(25,20,0,.95)';
+    ctx.fillStyle=baseColor;
+    ctx.fillRect(cell.x+.5,cell.y+.5,cell.w-1,cell.h-1);
+
+    // Cell grid line
+    ctx.strokeStyle='rgba(80,0,150,.3)';ctx.lineWidth=.5;
+    ctx.strokeRect(cell.x+.5,cell.y+.5,cell.w-1,cell.h-1);
+
+    // Snake cell tint
+    if(isSnake){
+      const sc=SNAKE_CONFIGS[sq];
+      const g2=ctx.createRadialGradient(cell.x+cell.w/2,cell.y+cell.h/2,0,cell.x+cell.w/2,cell.y+cell.h/2,cell.w*.7);
+      g2.addColorStop(0,sc.accent+'33');g2.addColorStop(1,'transparent');
+      ctx.fillStyle=g2;ctx.fillRect(cell.x,cell.y,cell.w,cell.h);
+    }
+    // Ladder cell tint
+    if(isLadder){
+      const g2=ctx.createRadialGradient(cell.x+cell.w/2,cell.y+cell.h/2,0,cell.x+cell.w/2,cell.y+cell.h/2,cell.w*.7);
+      g2.addColorStop(0,'rgba(0,255,100,.12)');g2.addColorStop(1,'transparent');
+      ctx.fillStyle=g2;ctx.fillRect(cell.x,cell.y,cell.w,cell.h);
+    }
+
+    // Current player position glow
+    if(isCur){
+      const g3=ctx.createRadialGradient(cell.x+cell.w/2,cell.y+cell.h/2,0,cell.x+cell.w/2,cell.y+cell.h/2,cell.w*.8);
+      g3.addColorStop(0,`rgba(255,100,50,${.3+Math.sin(t*.01)*.15})`);g3.addColorStop(1,'transparent');
+      ctx.fillStyle=g3;ctx.fillRect(cell.x,cell.y,cell.w,cell.h);
+    }
+
+    // Square number
+    const fs=Math.max(6,Math.min(cellW*.18,11));
+    ctx.font=`${fs}px 'Crimson Text',serif`;ctx.textAlign='left';ctx.textBaseline='top';
+    ctx.fillStyle=isSnake?'rgba(255,80,80,.7)':isLadder?'rgba(80,255,80,.7)':isSt||isEnd?'rgba(255,210,50,.8)':'rgba(100,80,130,.6)';
+    ctx.fillText(sq,cell.x+2,cell.y+1);
+
+    // Start/End labels
+    if(isSt||isEnd){
+      const lbl=isSt?'START':'EXIT';
+      ctx.font=`bold ${Math.max(6,cellW*.14)}px 'Cinzel Decorative',cursive`;
+      ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillStyle=isSt?'rgba(0,255,120,.9)':'rgba(255,210,50,.9)';
+      ctx.shadowColor=isSt?'#00ff88':'#ffd700';ctx.shadowBlur=8;
+      ctx.fillText(lbl,cell.x+cell.w/2,cell.y+cell.h/2);
+      ctx.shadowBlur=0;
+    }
+
+    // Snake icon on cell
+    if(isSnake&&!isCur){
+      const sc=SNAKE_CONFIGS[sq];
+      ctx.font=`${Math.max(8,cellW*.25)}px serif`;
+      ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.globalAlpha=.5+Math.sin(t*.008+sq)*.2;
+      ctx.fillStyle=sc.accent;
+      ctx.fillText('🐍',cell.x+cell.w*.7,cell.y+cell.h*.7);
+      ctx.globalAlpha=1;
+    }
+    // Ladder icon
+    if(isLadder&&!isCur){
+      ctx.font=`${Math.max(8,cellW*.25)}px serif`;
+      ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.globalAlpha=.5+Math.sin(t*.008+sq)*.2;
+      ctx.fillStyle='#7fff00';
+      ctx.fillText('🪜',cell.x+cell.w*.65,cell.y+cell.h*.7);
+      ctx.globalAlpha=1;
+    }
+  }
+}
+
+function drawSnakes(){
+  Object.entries(SNAKES).forEach(([from,to])=>{
+    const fi=parseInt(from);
+    const sc=SNAKE_CONFIGS[fi]||{color1:'#1a0000',color2:'#880000',accent:'#ff0000',eyeColor:'#ff4444',bodyPattern:'blood'};
+    snakeAnimT[fi]=(snakeAnimT[fi]||0)+.025;
+    const at=snakeAnimT[fi];
+
+    const fp=sqToXY(fi),tp=sqToXY(to);
+    const mx=(fp.x+tp.x)/2+(Math.sin(at*.3))*cellW*1.5;
+    const my=(fp.y+tp.y)/2+(Math.cos(at*.2))*cellH*1.5;
+    const segs=50;
+    const pts=[];
+    for(let i=0;i<=segs;i++){
+      const s=i/segs;
+      // Cubic bezier
+      const bx=(1-s)**2*fp.x+2*(1-s)*s*mx+s**2*tp.x;
+      const by=(1-s)**2*fp.y+2*(1-s)*s*my+s**2*tp.y;
+      // Add undulation
+      const perp={x:-(tp.y-fp.y),y:tp.x-fp.x};
+      const plen=Math.sqrt(perp.x**2+perp.y**2)||1;
+      const wave=Math.sin(s*Math.PI*3+at*2)*cellW*.18;
+      pts.push({x:bx+perp.x/plen*wave,y:by+perp.y/plen*wave});
+    }
+
+    // Draw body with gradient
+    const bodyW=cellW*.18+Math.sin(at)*.02*cellW;
+    ctx.save();ctx.lineCap='round';ctx.lineJoin='round';
+
+    // Shadow
+    ctx.shadowColor=sc.accent;ctx.shadowBlur=12+Math.sin(at*2)*4;
+    for(let i=1;i<=segs;i++){
+      const s=(i-1)/segs;
+      const thick=bodyW*(1-s*.3)*(1+Math.sin(s*Math.PI)*.2);
+      const c1=hexToRgb(sc.color1),c2=hexToRgb(sc.color2);
+      const r=Math.round(c1.r+(c2.r-c1.r)*s),g=Math.round(c1.g+(c2.g-c1.g)*s),b=Math.round(c1.b+(c2.b-c1.b)*s);
+      // Scale pattern
+      const scaleLight=(Math.sin(i*.8+at*3)*.5+.5)*.4;
+      ctx.strokeStyle=`rgba(${r+scaleLight*60},${g+scaleLight*60},${b+scaleLight*60},0.95)`;
+      ctx.lineWidth=thick;ctx.beginPath();ctx.moveTo(pts[i-1].x,pts[i-1].y);ctx.lineTo(pts[i].x,pts[i].y);ctx.stroke();
+    }
+    ctx.shadowBlur=0;
+
+    // Accent stripe
+    ctx.strokeStyle=sc.accent+'66';ctx.lineWidth=bodyW*.25;
+    ctx.beginPath();pts.forEach((p,i)=>i===0?ctx.moveTo(p.x,p.y):ctx.lineTo(p.x,p.y));ctx.stroke();
+
+    // HEAD
+    const head=pts[0],next=pts[3]||pts[1];
+    const headDir=Math.atan2(head.y-next.y,head.x-next.x);
+    const headR=bodyW*.85;
+    ctx.shadowColor=sc.accent;ctx.shadowBlur=20;
+    const headGrd=ctx.createRadialGradient(head.x,head.y,0,head.x,head.y,headR);
+    headGrd.addColorStop(0,sc.color2+'ff');headGrd.addColorStop(.7,sc.color1+'ff');headGrd.addColorStop(1,'#000000');
+    ctx.fillStyle=headGrd;ctx.beginPath();ctx.ellipse(head.x,head.y,headR*1.4,headR,headDir,0,Math.PI*2);ctx.fill();
+
+    // Eyes
+    for(let e=-1;e<=1;e+=2){
+      const ex=head.x+Math.cos(headDir+e*1.2)*headR*.7;
+      const ey=head.y+Math.sin(headDir+e*1.2)*headR*.7;
+      // Eye white
+      ctx.fillStyle='#ffffff';ctx.beginPath();ctx.arc(ex,ey,headR*.28,0,Math.PI*2);ctx.fill();
+      // Pupil (slit)
+      ctx.save();ctx.translate(ex,ey);ctx.rotate(headDir);
+      ctx.fillStyle='#000';ctx.beginPath();ctx.ellipse(0,0,headR*.1,headR*.22,0,0,Math.PI*2);ctx.fill();
+      ctx.restore();
+      // Eye glow
+      ctx.fillStyle=sc.eyeColor;ctx.shadowColor=sc.eyeColor;ctx.shadowBlur=15+Math.sin(at*4+e)*5;
+      ctx.beginPath();ctx.arc(ex,ey,headR*.15,0,Math.PI*2);ctx.fill();
+      ctx.shadowBlur=0;
+    }
+
+    // Tongue flicker
+    if(Math.sin(at*6)>.2){
+      const tongueBase={x:head.x+Math.cos(headDir)*headR*1.3,y:head.y+Math.sin(headDir)*headR*1.3};
+      const tongueLen=cellW*.22;
+      ctx.strokeStyle='#ff0000';ctx.lineWidth=headR*.12;ctx.shadowColor='#ff0000';ctx.shadowBlur=8;
+      ctx.beginPath();ctx.moveTo(tongueBase.x,tongueBase.y);
+      const tx=tongueBase.x+Math.cos(headDir)*tongueLen,ty=tongueBase.y+Math.sin(headDir)*tongueLen;
+      ctx.lineTo(tx,ty);ctx.stroke();
+      // Fork
+      ctx.lineWidth=headR*.08;
+      ctx.beginPath();ctx.moveTo(tx,ty);ctx.lineTo(tx+Math.cos(headDir-.4)*tongueLen*.4,ty+Math.sin(headDir-.4)*tongueLen*.4);ctx.stroke();
+      ctx.beginPath();ctx.moveTo(tx,ty);ctx.lineTo(tx+Math.cos(headDir+.4)*tongueLen*.4,ty+Math.sin(headDir+.4)*tongueLen*.4);ctx.stroke();
+      ctx.shadowBlur=0;
+    }
+
+    // Name tag above head
+    const nameAlpha=.5+Math.sin(at*.5)*.3;
+    ctx.globalAlpha=nameAlpha;
+    ctx.font=`bold ${Math.max(7,cellW*.12)}px 'Cinzel Decorative',cursive`;
+    ctx.textAlign='center';ctx.textBaseline='bottom';
+    ctx.fillStyle=sc.accent;ctx.shadowColor=sc.accent;ctx.shadowBlur=6;
+    ctx.fillText(sc.name,head.x,head.y-headR*1.5);
+    ctx.shadowBlur=0;ctx.globalAlpha=1;
+
+    ctx.restore();
+  });
+}
+
+function drawLadders(){
+  Object.entries(LADDERS).forEach(([from,to])=>{
+    const fp=sqToXY(parseInt(from)),tp=sqToXY(parseInt(to));
+    const dir={x:tp.x-fp.x,y:tp.y-fp.y};
+    const len=Math.sqrt(dir.x**2+dir.y**2);
+    const norm={x:-dir.y/len,y:dir.x/len};
+    const rungCount=Math.max(4,Math.floor(len/cellH*.8));
+    const railOffset=cellW*.1;
+
+    ctx.save();
+    // Bone glow
+    ctx.shadowColor='rgba(0,255,100,.4)';ctx.shadowBlur=8;
+
+    // Rails
+    for(let s=-1;s<=1;s+=2){
+      const r1={x:fp.x+norm.x*railOffset*s,y:fp.y+norm.y*railOffset*s};
+      const r2={x:tp.x+norm.x*railOffset*s,y:tp.y+norm.y*railOffset*s};
+      const railGrd=ctx.createLinearGradient(r1.x,r1.y,r2.x,r2.y);
+      railGrd.addColorStop(0,'#4a3a20');railGrd.addColorStop(.5,'#c8bfa0');railGrd.addColorStop(1,'#4a3a20');
+      ctx.strokeStyle=railGrd;ctx.lineWidth=Math.max(2,cellW*.045);ctx.lineCap='round';
+      ctx.beginPath();ctx.moveTo(r1.x,r1.y);ctx.lineTo(r2.x,r2.y);ctx.stroke();
+      // Bone knots
+      for(let k=0;k<3;k++){
+        const kp=(k+1)/4,kx=r1.x+(r2.x-r1.x)*kp,ky=r1.y+(r2.y-r1.y)*kp;
+        ctx.fillStyle='#c8bfa0';ctx.beginPath();ctx.arc(kx,ky,Math.max(2,cellW*.06),0,Math.PI*2);ctx.fill();
+      }
+    }
+    // Rungs
+    for(let ri=0;ri<=rungCount;ri++){
+      const s=ri/rungCount;
+      const glow=.5+Math.sin(t*.008+s*5)*.4;
+      const rx=fp.x+dir.x*s,ry=fp.y+dir.y*s;
+      const p1={x:rx+norm.x*railOffset,y:ry+norm.y*railOffset};
+      const p2={x:rx-norm.x*railOffset,y:ry-norm.y*railOffset};
+      const rungGrd=ctx.createLinearGradient(p1.x,p1.y,p2.x,p2.y);
+      rungGrd.addColorStop(0,'#2a2000');rungGrd.addColorStop(.5,`rgba(120,100,50,${glow})`);rungGrd.addColorStop(1,'#2a2000');
+      ctx.strokeStyle=rungGrd;ctx.lineWidth=Math.max(1.5,cellW*.035);
+      ctx.beginPath();ctx.moveTo(p1.x,p1.y);ctx.lineTo(p2.x,p2.y);ctx.stroke();
+    }
+    // Bottom label
+    const pulse=.7+Math.sin(t*.006+parseInt(from))*.3;
+    ctx.globalAlpha=pulse;
+    ctx.font=`bold ${Math.max(6,cellW*.12)}px 'Cinzel Decorative',cursive`;
+    ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillStyle='#7fff00';ctx.shadowColor='#00ff44';ctx.shadowBlur=8;
+    ctx.fillText(`${from}→${to}`,fp.x,fp.y+cellH*.35);
+    ctx.shadowBlur=0;ctx.globalAlpha=1;
+    ctx.restore();
+  });
+}
+
+function drawPlayer(){
+  const p=playerAnim;
+  // Trail
+  p.trail.forEach((tr,i)=>{
+    const a=i/p.trail.length*.4;
+    ctx.beginPath();ctx.arc(tr.x,tr.y,cellW*.15*(i/p.trail.length),0,Math.PI*2);
+    ctx.fillStyle=`rgba(255,100,50,${a})`;ctx.fill();
+  });
+
+  ctx.save();ctx.translate(p.x,p.y-p.bounce);ctx.scale(p.scale,p.scale);
+
+  // Player glow
+  const glowR=cellW*.35+Math.sin(t*.015)*cellW*.05;
+  const glowGrd=ctx.createRadialGradient(0,0,0,0,0,glowR);
+  glowGrd.addColorStop(0,`rgba(255,80,30,${.35+Math.sin(t*.01)*.15})`);glowGrd.addColorStop(1,'transparent');
+  ctx.fillStyle=glowGrd;ctx.beginPath();ctx.arc(0,0,glowR,0,Math.PI*2);ctx.fill();
+
+  // Robe shadow
+  ctx.shadowColor='rgba(255,50,0,.5)';ctx.shadowBlur=15;
+
+  // Robe (cone)
+  const robeH=cellH*.55,robeW=cellW*.28;
+  const robeGrd=ctx.createLinearGradient(-robeW,0,robeW,0);
+  robeGrd.addColorStop(0,'#050010');robeGrd.addColorStop(.5,'#150030');robeGrd.addColorStop(1,'#050010');
+  ctx.fillStyle=robeGrd;
+  ctx.beginPath();ctx.moveTo(0,-robeH);ctx.lineTo(-robeW,0);ctx.lineTo(robeW,0);ctx.closePath();ctx.fill();
+  // Robe edge glow
+  ctx.strokeStyle='rgba(180,0,255,.3)';ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(0,-robeH);ctx.lineTo(-robeW,0);ctx.lineTo(robeW,0);ctx.closePath();ctx.stroke();
+
+  // Hood
+  ctx.fillStyle='#0a001a';
+  ctx.beginPath();ctx.arc(0,-robeH+robeW*.4,robeW*.5,0,Math.PI*2);ctx.fill();
+  // Hood glow
+  ctx.strokeStyle='rgba(100,0,200,.4)';ctx.lineWidth=1;
+  ctx.beginPath();ctx.arc(0,-robeH+robeW*.4,robeW*.5,0,Math.PI*2);ctx.stroke();
+
+  // Eyes
+  for(let e=-1;e<=1;e+=2){
+    const ex=e*robeW*.22,ey=-robeH+robeW*.45;
+    ctx.fillStyle=`rgba(255,50,0,${.7+Math.sin(t*.02+e)*.3})`;
+    ctx.shadowColor='#ff3300';ctx.shadowBlur=10;
+    ctx.beginPath();ctx.arc(ex,ey,robeW*.1,0,Math.PI*2);ctx.fill();
+  }
+  ctx.shadowBlur=0;
+
+  // Dagger
+  const dagX=robeW*.6,dagY=-robeH*.3;
+  const dagAngle=-.3+Math.sin(t*.015)*.15;
+  ctx.save();ctx.translate(dagX,dagY);ctx.rotate(dagAngle);
+  ctx.fillStyle='#888888';ctx.beginPath();ctx.moveTo(0,-robeW*.4);ctx.lineTo(robeW*.06,robeW*.15);ctx.lineTo(-robeW*.06,robeW*.15);ctx.closePath();ctx.fill();
+  ctx.fillStyle='#4a3000';ctx.fillRect(-robeW*.08,robeW*.15,robeW*.16,robeW*.15);
+  ctx.restore();
+
+  ctx.restore();
+
+  // Square number above player
+  const sqPos=sqToXY(playerPos);
+  ctx.font=`bold ${Math.max(7,cellW*.13)}px 'Cinzel Decorative',cursive`;
+  ctx.textAlign='center';ctx.textBaseline='bottom';
+  ctx.fillStyle='#ff6030';ctx.shadowColor='#ff3000';ctx.shadowBlur=8;
+  ctx.fillText(`SQ ${playerPos}`,p.x,p.y-cellH*.55);
+  ctx.shadowBlur=0;
+}
+
+function drawDice(){
+  if(!diceAnim.rolling&&diceAnim.t===0)return;
+  const d=diceAnim;
+  ctx.save();ctx.translate(d.x,d.y);ctx.rotate(d.rot);
+  const ds=cellW*.6;
+  // Die face
+  const dieGrd=ctx.createLinearGradient(-ds,-ds,ds,ds);
+  dieGrd.addColorStop(0,'#2a0050');dieGrd.addColorStop(.5,'#1a0030');dieGrd.addColorStop(1,'#0a0020');
+  ctx.fillStyle=dieGrd;ctx.strokeStyle='rgba(180,0,255,.5)';ctx.lineWidth=2;
+  ctx.shadowColor='rgba(200,0,255,.5)';ctx.shadowBlur=20;
+  ctx.beginPath();ctx.roundRect(-ds,-ds,ds*2,ds*2,ds*.2);ctx.fill();ctx.stroke();
+  ctx.shadowBlur=0;
+
+  // Dots for value
+  const dotPositions={
+    1:[[0,0]],
+    2:[[-ds*.45,-ds*.45],[ds*.45,ds*.45]],
+    3:[[-ds*.45,-ds*.45],[0,0],[ds*.45,ds*.45]],
+    4:[[-ds*.45,-ds*.45],[ds*.45,-ds*.45],[-ds*.45,ds*.45],[ds*.45,ds*.45]],
+    5:[[-ds*.45,-ds*.45],[ds*.45,-ds*.45],[0,0],[-ds*.45,ds*.45],[ds*.45,ds*.45]],
+    6:[[-ds*.45,-ds*.45],[ds*.45,-ds*.45],[-ds*.45,0],[ds*.45,0],[-ds*.45,ds*.45],[ds*.45,ds*.45]]
+  };
+  const val=d.rolling?Math.ceil(Math.random()*6):d.value;
+  (dotPositions[val]||dotPositions[1]).forEach(([dx,dy])=>{
+    ctx.fillStyle='#cc3300';ctx.shadowColor='#ff2200';ctx.shadowBlur=8;
+    ctx.beginPath();ctx.arc(dx,dy,ds*.14,0,Math.PI*2);ctx.fill();
+  });
+  ctx.shadowBlur=0;
+  ctx.restore();
+}
+
+function drawSnakeEat(){
+  if(!snakeEatAnim)return;
+  const {cfg,t:at,sq}=snakeEatAnim;
+  const pos=sqToXY(sq);
+  const p=(Math.min(at,1));
+  // Jaw opening effect
+  const jawR=cellW*(p*.6+.2);
+  const grd=ctx.createRadialGradient(pos.x,pos.y,0,pos.x,pos.y,jawR);
+  grd.addColorStop(0,'rgba(200,0,0,.8)');grd.addColorStop(.5,cfg.accent+'88');grd.addColorStop(1,'transparent');
+  ctx.fillStyle=grd;ctx.beginPath();ctx.arc(pos.x,pos.y,jawR,0,Math.PI*2);ctx.fill();
+  // Text
+  ctx.font=`bold ${Math.max(10,cellW*.3)}px 'Cinzel Decorative',cursive`;
+  ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillStyle=cfg.accent;ctx.shadowColor=cfg.accent;ctx.shadowBlur=20;
+  ctx.globalAlpha=Math.min(p*3,1)*(1-Math.max(0,p-0.7)*3);
+  ctx.fillText('CONSUMED',pos.x,pos.y);
+  ctx.shadowBlur=0;ctx.globalAlpha=1;
+}
+
+function drawLadderAnim(){
+  if(!ladderAnim)return;
+  const {from,to,t:at}=ladderAnim;
+  const fp=sqToXY(from),tp=sqToXY(to);
+  const p=Math.min(at,1);
+  const cx=fp.x+(tp.x-fp.x)*p,cy=fp.y+(tp.y-fp.y)*p-Math.sin(p*Math.PI)*cellH*1.5;
+  const grd=ctx.createRadialGradient(cx,cy,0,cx,cy,cellW*.5);
+  grd.addColorStop(0,'rgba(0,255,100,.7)');grd.addColorStop(1,'transparent');
+  ctx.fillStyle=grd;ctx.beginPath();ctx.arc(cx,cy,cellW*.5,0,Math.PI*2);ctx.fill();
+  ctx.font=`${Math.max(8,cellW*.2)}px serif`;ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.globalAlpha=Math.sin(p*Math.PI);
+  ctx.fillText('⚗',cx,cy);
+  ctx.globalAlpha=1;
+}
+
+function hexToRgb(hex){
+  const r=parseInt(hex.slice(1,3),16)||0,g=parseInt(hex.slice(3,5),16)||0,b=parseInt(hex.slice(5,7),16)||0;
+  return{r,g,b};
+}
+
+// ═══════════════════════════════════════════
+//  MAIN RENDER LOOP
+// ═══════════════════════════════════════════
+function render(){
+  t++;
+  glowPulse=Math.sin(t*.01)*.5+.5;
+
+  // Shake
+  if(shakeDecay>0){
+    shakeX=(Math.random()-.5)*shakeDecay*20;
+    shakeY=(Math.random()-.5)*shakeDecay*10;
+    shakeDecay*=.88;
+    if(shakeDecay<.01)shakeDecay=0;
+  } else {shakeX=0;shakeY=0;}
+
+  ctx.save();ctx.translate(shakeX,shakeY);
+
+  drawBG();
+  drawParticles();
+  drawBoard();
+  drawLadders();
+  drawSnakes();
+  drawLadderAnim();
+  drawSnakeEat();
+
+  // Player trail update
+  const tgt=sqToXY(playerPos);
+  playerAnim.trail.push({x:playerAnim.x,y:playerAnim.y});
+  if(playerAnim.trail.length>8)playerAnim.trail.shift();
+  playerAnim.x+=(playerAnim.tx-playerAnim.x)*.15;
+  playerAnim.y+=(playerAnim.ty-playerAnim.y)*.15;
+  playerAnim.bounce=moving?Math.abs(Math.sin(t*.3))*cellH*.25:Math.sin(t*.02)*cellH*.03;
+
+  drawPlayer();
+  drawDice();
+
+  // Animate dice
+  if(diceAnim.rolling){
+    diceAnim.velY+=0.4;
+    diceAnim.x+=diceAnim.velX;
+    diceAnim.y+=diceAnim.velY;
+    diceAnim.rot+=diceAnim.rotV;
+    if(diceAnim.y>H-150){diceAnim.velY*=-.6;diceAnim.velX*=.8;diceAnim.y=H-150;}
+    if(diceAnim.x<50||diceAnim.x>W-50){diceAnim.velX*=-1;}
+  }
+
+  // Animate snake eat
+  if(snakeEatAnim){
+    snakeEatAnim.t+=.025;
+    if(snakeEatAnim.t>1.2)snakeEatAnim=null;
+  }
+  // Animate ladder
+  if(ladderAnim){
+    ladderAnim.t+=.018;
+    if(ladderAnim.t>1)ladderAnim=null;
+  }
+
+  ctx.restore();
+  requestAnimationFrame(render);
+}
+
+// ═══════════════════════════════════════════
+//  GAME LOGIC
+// ═══════════════════════════════════════════
+function setTarget(sq){
+  const pos=sqToXY(sq);
+  playerAnim.tx=pos.x;playerAnim.ty=pos.y;
+}
+function initPlayer(){
+  const pos=sqToXY(1);
+  playerAnim.x=pos.x;playerAnim.y=pos.y;
+  playerAnim.tx=pos.x;playerAnim.ty=pos.y;
+}
+initPlayer();
+
+function updateUI(){
+  document.getElementById('souls-counter').textContent=`💀 ${Math.max(0,souls)} SOULS`;
+  document.getElementById('pos-info').textContent=`Square ${playerPos} / 100`;
+}
+function setStatus(txt){document.getElementById('status').textContent=txt;}
+function addLog(txt,cls=''){
+  const log=document.getElementById('log');
+  const d=document.createElement('div');d.className=`le${cls?' '+cls:''}`;
+  const time=new Date().toLocaleTimeString('en',{hour12:false,hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  d.textContent=`${time} — ${txt}`;
+  log.prepend(d);
+  while(log.children.length>30)log.removeChild(log.lastChild);
+}
+
+function flash(color='red',dur=200){
+  const el=document.getElementById('flash');
+  el.className=color;el.style.opacity='1';
+  setTimeout(()=>{el.style.opacity='0';el.className='';},dur);
+}
+function shake(intensity=1,dur=500){
+  shakeDecay=intensity;
+  setTimeout(()=>{shakeDecay=0;},dur);
+}
+function bloodSplat(){
+  const b=document.createElement('div');
+  b.className='blood-splat';b.textContent='🩸';
+  b.style.left=Math.random()*80+10+'vw';b.style.top=Math.random()*60+10+'vh';
+  document.body.appendChild(b);setTimeout(()=>b.remove(),2200);
+}
+function spawnDrip(){
+  const d=document.createElement('div');
+  d.className='blood-drip';d.style.left=Math.random()*95+'vw';
+  d.style.width=(2+Math.random()*4)+'px';
+  d.style.animationDuration=(2+Math.random()*4)+'s';
+  document.body.appendChild(d);setTimeout(()=>d.remove(),6000);
+}
+function ghostMsg(txt){
+  const g=document.createElement('div');
+  g.className='ghost-text';g.textContent=`"${txt}"`;
+  g.style.left=Math.random()*70+15+'vw';
+  g.style.top=(30+Math.random()*40)+'vh';
+  document.body.appendChild(g);setTimeout(()=>g.remove(),5100);
+}
+function showAITaunt(txt){
+  const el=document.getElementById('ai-taunt');
+  el.textContent=txt;el.className='show';
+  setTimeout(()=>el.className='',6000);
+}
+
+// Random horror events
+setInterval(()=>{
+  if(gameOver)return;
+  const r=Math.random();
+  if(r<.25)spawnDrip();
+  if(r<.15)ghostMsg(WHISPERS[Math.floor(Math.random()*WHISPERS.length)]);
+  if(r<.08){shake(.15,300);playGroan();}
+  if(r<.2)playWhisper();
+  // Flicker chromatic
+  if(r<.3){
+    document.getElementById('chromatic').style.opacity='.15';
+    setTimeout(()=>document.getElementById('chromatic').style.opacity='0',100+Math.random()*200);
+  }
+},4500);
+
+// ═══════════════════════════════════════════
+//  BETTING
+// ═══════════════════════════════════════════
+function selectBet(type,el){
+  activeBet=type;
+  document.querySelectorAll('.bet-card').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+}
+window.selectBet=selectBet;
+
+window.openWager=function(){
+  resume();
+  document.getElementById('wager-modal').style.display='block';
+};
+window.placeWager=function(type){
+  const amt=parseInt(document.getElementById('wager-amt').value)||50;
+  if(amt>souls){setStatus('Insufficient souls for this wager.');return;}
+  sideWager={type,amount:amt};souls-=amt;updateUI();
+  addLog(`Side wager: ${amt} souls on ${type.toUpperCase()}`,`bet`);
+  setStatus(`Wager placed — ${amt} souls on a ${type}. Now roll!`);
+  document.getElementById('wager-modal').style.display='none';
+};
+
+// ═══════════════════════════════════════════
+//  AI ORACLE
+// ═══════════════════════════════════════════
+window.askAI=async function(){
+  resume();
+  document.getElementById('ai-panel').style.display='block';
+  document.getElementById('ai-response').innerHTML='<span id="ai-thinking">The oracle peers into the void...</span>';
+
+  const snakeList=Object.entries(SNAKES).map(([f,t])=>`sq${f}→${t}(${(SNAKE_CONFIGS[parseInt(f)]||{name:'Serpent'}).name})`).join(', ');
+  const ladderList=Object.entries(LADDERS).map(([f,t])=>`sq${f}→${t}`).join(', ');
+
+  const prompt=`You are the horrifying oracle of a cursed board game called "Altar of Serpents". The player is at square ${playerPos} out of 100, has ${souls} souls left. Snakes (danger): ${snakeList}. Ladders (safe): ${ladderList}. Speak in first person as the terrifying oracle — give a cryptic, dramatic, horror-flavored fortune about their current position, risks ahead, and whether they should bet big or small. Be menacing, poetic, and reference specific nearby snakes or ladders by name. Max 80 words. End with a horrifying prophecy.`;
+
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:200,messages:[{role:'user',content:prompt}]})
+    });
+    const data=await res.json();
+    const txt=data.content?.[0]?.text||'The void offers no answers tonight...';
+    document.getElementById('ai-response').textContent=txt;
+    showAITaunt(txt.substring(0,120)+'...');
+    addLog(`Oracle consulted`,`ai`);
+  }catch(e){
+    document.getElementById('ai-response').textContent='The altar screams... but the oracle is silent. (API connection failed — ensure you are using this via the Claude artifact system)';
+  }
+};
+
+// ═══════════════════════════════════════════
+//  DICE ROLL & MOVEMENT
+// ═══════════════════════════════════════════
+async function moveStep(sq){
+  return new Promise(resolve=>{
+    playerPos=sq;setTarget(sq);updateUI();
+    moving=true;setTimeout(()=>{moving=false;resolve();},220);
+  });
+}
+
+window.doRoll=async function(){
+  if(rolling||gameOver||moving)return;
+  resume();
+
+  const stdAmt=parseInt(document.getElementById('std-amt').value)||50;
+  const insAmt=parseInt(document.getElementById('ins-amt').value)||0;
+  const boostAmt=parseInt(document.getElementById('boost-amt').value)||0;
+  const curseAmt=parseInt(document.getElementById('curse-amt').value)||60;
+
+  let cost=stdAmt;
+  if(activeBet==='ins')cost+=insAmt;
+  if(activeBet==='boost')cost+=boostAmt;
+  if(activeBet==='curse')cost+=curseAmt;
+  if(cost>souls){setStatus('⚠ INSUFFICIENT SOULS. The altar rejects your offering.');return;}
+  if(stdAmt<10){setStatus('Minimum bet is 10 souls.');return;}
+
+  souls-=cost;updateUI();
+  rolling=true;document.getElementById('btn-roll').disabled=true;
+
+  // Launch dice animation
+  diceAnim.rolling=true;diceAnim.t=0;
+  diceAnim.x=W*.15+Math.random()*W*.1;diceAnim.y=H*.3;
+  diceAnim.velX=(Math.random()-.5)*12;diceAnim.velY=-15-Math.random()*8;
+  diceAnim.rotV=(Math.random()-.5)*.3;
+
+  let roll=Math.floor(Math.random()*6)+1;
+  if(activeBet==='curse'){roll=Math.min(6,roll+2);} // curse gives +2
+
+  playDice();
+  setStatus(`The bones tumble through the void...`);
+
+  await new Promise(r=>setTimeout(r,2000));
+  diceAnim.rolling=false;diceAnim.value=roll;
+
+  playChime();
+  setStatus(`The bones speak: ${roll}!`);
+  addLog(`Rolled ${roll} (bet: ${cost} souls)`,'bet');
+  await new Promise(r=>setTimeout(r,600));
+
+  // Move step by step
+  const target=Math.min(playerPos+roll,100);
+  for(let s=playerPos+1;s<=target;s++){
+    await moveStep(s);
+    await new Promise(r=>setTimeout(r,60));
+  }
+
+  // Win check
+  if(playerPos===100){
+    souls+=stdAmt*5;updateUI();
+    playWin();flash('white',500);
+    setStatus('⚗ YOU ESCAPED THE ALTAR! The serpents shriek in rage!');
+    addLog('ESCAPED THE ALTAR — VICTORY!','ladder');
+    setTimeout(()=>{
+      const es=document.getElementById('endscreen');
+      document.getElementById('end-title').innerHTML=`<span style="background:linear-gradient(135deg,#9d4edd,#00ff88,#ffd700);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">YOU ESCAPED<br>THE ALTAR</span>`;
+      document.getElementById('end-sub').textContent=`${souls} souls remain. The serpents hunger for your return.`;
+      es.classList.add('show');
+    },2000);
+    rolling=false;return;
+  }
+
+  // Check side wager
+  const isSnakeSq=SNAKES[playerPos]!==undefined;
+  const isLadderSq=LADDERS[playerPos]!==undefined;
+  if(sideWager){
+    const won=(sideWager.type==='snake'&&isSnakeSq)||(sideWager.type==='ladder'&&isLadderSq);
+    if(won){
+      souls+=sideWager.amount*3;
+      addLog(`SIDE WAGER WON! +${sideWager.amount*3} souls`,'ladder');
+      setStatus(`⚗ SIDE WAGER CORRECT! +${sideWager.amount*3} souls!`);
+      flash('green',300);
+    } else {
+      addLog(`Side wager lost. -${sideWager.amount} souls`,'snake');
+    }
+    sideWager=null;updateUI();
+  }
+
+  souls+=20;updateUI(); // roll reward
+
+  if(isSnakeSq){
+    const sc=SNAKE_CONFIGS[playerPos]||{name:'Serpent',penalty:60,accent:'#ff0000',desc:'',color1:'#1a0000',color2:'#880000',eyeColor:'#ff4444',bodyPattern:'blood'};
+    let penalty=sc.penalty;
+    if(activeBet==='ins')penalty=Math.floor(penalty/2);
+    souls=Math.max(0,souls-penalty);updateUI();
+
+    // Horror effects
+    playSnakeHiss(playerPos);
+    setTimeout(playDeath,400);
+    flash('red',600);shake(1.2,900);
+    bloodSplat();bloodSplat();bloodSplat();
+    spawnDrip();spawnDrip();
+    snakeEatAnim={sq:playerPos,cfg:sc,t:0};
+
+    setStatus(`🐍 ${sc.name.toUpperCase()} DEVOURS YOU! ${sc.desc} -${penalty} souls!`);
+    addLog(`SNAKE — ${sc.name}: ${playerPos}→${SNAKES[playerPos]}. -${penalty} souls`,'snake');
+
+    await new Promise(r=>setTimeout(r,1800));
+    await teleportTo(SNAKES[playerPos]);
+
+    // Show snake tooltip
+    showAITaunt(`The ${sc.name} hisses: "${sc.desc}" — ${SNAKES[playerPos]} souls remain.`);
+
+  } else if(isLadderSq){
+    let reward=60;
+    if(activeBet==='boost')reward*=2;
+    souls+=reward;updateUI();
+
+    playLadder();flash('green',400);
+    ladderAnim={from:playerPos,to:LADDERS[playerPos],t:0};
+
+    setStatus(`⚗ THE BONES ASCEND! Square ${playerPos} → ${LADDERS[playerPos]}. +${reward} souls!`);
+    addLog(`LADDER: ${playerPos}→${LADDERS[playerPos]}. +${reward} souls`,'ladder');
+
+    await new Promise(r=>setTimeout(r,1500));
+    await teleportTo(LADDERS[playerPos]);
+
+  } else {
+    setStatus(`Square ${playerPos}. ${souls} souls remain.`);
+  }
+
+  // Check game over
+  if(souls<=0){
+    souls=0;updateUI();gameOver=true;
+    playDeath();flash('red',1000);shake(2,2000);
+    for(let i=0;i<8;i++)setTimeout(bloodSplat,i*200);
+    setStatus('💀 YOUR SOUL IS FORFEIT. THE ALTAR CLAIMS YOU FOREVER.');
+    addLog('GAME OVER — Soul consumed','snake');
+    document.getElementById('btn-roll').disabled=true;
+    setTimeout(()=>{
+      const es=document.getElementById('endscreen');
+      document.getElementById('end-title').innerHTML=`<span style="color:#8b0000;text-shadow:0 0 30px #ff0000;">YOUR SOUL<br>IS CONSUMED</span>`;
+      document.getElementById('end-sub').textContent='666 souls... all gone. The altar feasts on your screams.';
+      es.classList.add('show');
+    },3000);
+    rolling=false;return;
+  }
+
+  rolling=false;
+  document.getElementById('btn-roll').disabled=false;
+  setStatus(`Square ${playerPos}. ${souls} souls. The altar awaits your next move.`);
+};
+
+async function teleportTo(sq){
+  return new Promise(r=>{
+    playerPos=sq;setTarget(sq);updateUI();
+    moving=true;setTimeout(()=>{moving=false;r();},400);
+  });
+}
+
+// Snake tooltip on hover
+canvas.addEventListener('mousemove',e=>{
+  const rect=canvas.getBoundingClientRect();
+  const mx=e.clientX-rect.left,my=e.clientY-rect.top;
+  let found=null;
+  for(let sq=1;sq<=100;sq++){
+    const c=sqToCell(sq);
+    if(mx>=c.x&&mx<=c.x+c.w&&my>=c.y&&my<=c.y+c.h){
+      if(SNAKES[sq]){found={sq,type:'snake',cfg:SNAKE_CONFIGS[sq],to:SNAKES[sq]};}
+      else if(LADDERS[sq]){found={sq,type:'ladder',to:LADDERS[sq]};}
+      break;
+    }
+  }
+  const tt=document.getElementById('snake-tooltip');
+  if(found){
+    tt.style.display='block';
+    tt.style.left=(e.clientX+14)+'px';tt.style.top=(e.clientY-40)+'px';
+    if(found.type==='snake'){
+      const sc=found.cfg||{name:'Serpent',desc:'',penalty:60,accent:'#ff0000'};
+      tt.style.borderColor=sc.accent;
+      tt.style.color=sc.accent;
+      tt.innerHTML=`<b>${sc.name}</b><br>${sc.desc}<br>Penalty: ${sc.penalty} souls → sq${found.to}`;
+    } else {
+      tt.style.borderColor='#00ff88';tt.style.color='#00ff88';
+      tt.innerHTML=`<b>⚗ ASCENSION LADDER</b><br>Climb to square ${found.to}<br>+60 souls (×2 with Booster)`;
+    }
+  } else {tt.style.display='none';}
+});
+
+// ═══════════════════════════════════════════
+//  BOOT
+// ═══════════════════════════════════════════
+playAmbient();
+updateUI();
+setTarget(1);
+render();
+
+// Whispers at intervals
+setInterval(()=>{if(!gameOver&&Math.random()<.5)playWhisper();},10000);
+
+// Occasional AI taunts (pre-canned)
+const CANNED_TAUNTS=[
+  "The Void Serpent circles square 99... it has been waiting centuries for you.",
+  "Your souls dwindle. The altar grows hungry.",
+  "The Acid Wyrm at square 87 has not fed in three days. You smell of fear.",
+  "Those who reach square 100 leave something behind. Their screams never do.",
+  "The Blood Python tightens its coils. You are closer than you know.",
+  "Square 17 breathes. The Crimson Hydra never sleeps."
+];
+setInterval(()=>{
+  if(!gameOver&&Math.random()<.3)showAITaunt(CANNED_TAUNTS[Math.floor(Math.random()*CANNED_TAUNTS.length)]);
+},20000);
+
+setTimeout(()=>showAITaunt("The altar awakens. 666 souls pulse in your chest. Do not lose them to the serpents..."),3000);
+</script>
+</body>
+</html>
