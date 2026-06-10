@@ -45,7 +45,6 @@ I have covered an extensive curriculum, diving deep into Python, Data Science, S
 *   **Logistic Regression:** OVR, Imbalanced Datasets, ROC/AUC, Mathematical Intuition.
 *   **Support Vector Machines (SVM):** Soft vs. Hard Margins, Support Vector Classifiers (SVC), Support Vector Regressors (SVR), and Kernels (Math & Implementation).
 *   **Model Optimization:** Performance Metrics (MSE, MAE, RMSE), Grid Search, Randomized Search CV for Hyperparameter Tuning.
-*   **MLOps:** End-to-End ML Project Implementation and Deployment to AWS.
 
 ## 🗂️ Repository Structure
 
